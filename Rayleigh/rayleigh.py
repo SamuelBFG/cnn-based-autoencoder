@@ -21,7 +21,7 @@ import time
 '''
 
 # Bits per Symbol
-k = 4
+k = 6
 
 # Number of symbols
 L = 50
@@ -34,7 +34,7 @@ n = 1
 R = k / n
 
 # Eb/N0 used for training
-train_Eb_dB = 22
+train_Eb_dB = 27
 
 # Noise Standard Deviation
 noise_sigma = np.sqrt(1 / (2 * R * 10 ** (train_Eb_dB / 10)))
@@ -75,7 +75,7 @@ label_one_hot = copy.copy(vec_one_hot)
 
 early_stopping_patience = 100
 
-epochs = 50
+epochs = 100
 
 optimizer = Adam(lr=0.001)
 
@@ -88,7 +88,7 @@ reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.1,
                               patience=5, min_lr=0.0001)
 
 # Save the best results based on Training Set
-modelcheckpoint = ModelCheckpoint(filepath='./' + 'model_LBC_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh ' + '.h5',
+modelcheckpoint = ModelCheckpoint(filepath='./' + 'model_trained_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh' + '.h5',
                                   monitor='loss',
                                   verbose=1,
                                   save_best_only=True,

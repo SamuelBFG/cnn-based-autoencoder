@@ -17,7 +17,7 @@ import copy
 '''
 
 # number of information bits
-k = 4
+k = 6
 
 # codeword Length
 L = 50
@@ -30,7 +30,7 @@ n = 1
 R = k/n
 
 # Eb/N0 used for training(load_weights)
-train_Eb_dB = 22
+train_Eb_dB = 27
 
 # Number of messages used for test, each size = k*L
 batch_size = 64
@@ -179,14 +179,13 @@ for Eb_N0_dB in range(0,30):
 
 
     # Load Weights from the trained NN
-    model.load_weights('./' + 'model_LBC_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh ' + '.h5',
+    model.load_weights('./' + 'model_trained_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh' + '.h5',
                        by_name=False)
 
 
     '''
     RUN THE NN
     '''
-
     # RUN Through the Model and get output
     decoder_output = model.predict(vec_one_hot, batch_size=batch_size)
 
@@ -243,6 +242,6 @@ label = [str(k) + '_' + str(L)]
 plt.legend(label, loc=0)
 plt.xlabel('Eb/N0')
 plt.ylabel('BER')
-plt.title(str(k) + '_' + str(n)+'_'+str(L))
+plt.title('k=' + str(k) + ' ' + 'n=' + str(n) + ' ' + 'L=' + str(L))
 plt.grid('true')
 plt.show()
