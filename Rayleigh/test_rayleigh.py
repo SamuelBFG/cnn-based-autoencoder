@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras import backend as KR
 import copy
-
+KR.set_floatx('float64')
 
 '''
  --- COMMUNICATION PARAMETERS ---
 '''
 
 # number of information bits
-k = 6
+k = 2
 
 # codeword Length
 L = 50
@@ -30,7 +30,7 @@ n = 1
 R = k/n
 
 # Eb/N0 used for training(load_weights)
-train_Eb_dB = 27
+train_Eb_dB = 16
 
 # Number of messages used for test, each size = k*L
 batch_size = 64
@@ -96,8 +96,9 @@ def complex_multi(h,x):
 # Define Channel Layers
 #  x: input data
 #  sigma: noise std
-def channel_layer(x, sigma):
+def channel_layer(inputs):
     # Init output tensor
+    x, sigma = inputs
     a_complex = []
 
     # AWGN noise
@@ -158,8 +159,8 @@ for Eb_N0_dB in range(0,30):
     e = Lambda(normalization, name='power_norm')(e)
 
     # Rayleigh + AWGN channel + h(CSI)
-    y_h = Lambda(channel_layer, arguments={'sigma': noise_sigma}, name='channel_layer')(e)
-
+    # y_h = Lambda(channel_layer, arguments={'sigma': noise_sigma}, name='channel_layer')(e)
+    y_h = Lambda(function=channel_layer, name='channel_layer')([e, noise_sigma])
     # Define Decoder Layers (Receiver)
     d = Conv1D(filters=256, strides=1, kernel_size=1, name='d_1')(y_h)
     d = BatchNormalization(name='d_2')(d)
@@ -179,8 +180,7 @@ for Eb_N0_dB in range(0,30):
 
 
     # Load Weights from the trained NN
-    model.load_weights('./' + 'model_trained_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh' + '.h5',
-                       by_name=False)
+    model.load_weights('./' + 'model_trained_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh' + '.tf')
 
 
     '''
