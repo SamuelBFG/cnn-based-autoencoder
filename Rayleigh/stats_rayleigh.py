@@ -5,7 +5,7 @@ import time
 from scipy.special import gamma
 
 # GAUSSIAN
-mean, var = 0, 1
+mean, var = 0, 4
 N = 10**6
 sigmaGauss = np.sqrt(var)
 print('#'*50)
@@ -15,16 +15,16 @@ x = np.random.normal(mean, sigmaGauss, N)
 _, bins, _ = plt.hist(x, 100, density=True)
 plt.plot(bins, 1/(sigmaGauss * np.sqrt(2 * np.pi)) *
 	               np.exp( - (bins - mean)**2 / (2 * sigmaGauss**2) ),
-	               linewidth=2, color='r', label=r'$\sigma^2 = {}$.'.format(sigmaGauss))
+	               linewidth=2, color='r', label=r'$\sigma_G^2 = {}$'.format(var))
 
-plt.title(r'Gaussian pdf ($\sigma_G = {}$)'.format(sigmaGauss))
-plt.text(0, 0.5, '$\sigma_G^2 = {}$'.format(sigmaGauss**2))
+plt.title(r'Gaussian pdf ($\sigma = ${})'.format(sigmaGauss))
+
 plt.legend(loc='upper right')
 plt.show()
 
 
 # RAYLEIGH
-OmegaRayleigh = 2 * sigmaGauss**2
+OmegaRayleigh = 2 * var
 print('#'*50)
 print('OmegaRayleigh = {}'.format(OmegaRayleigh))
 xRayleigh = np.random.normal(mean, np.sqrt(OmegaRayleigh/2), N)
@@ -34,11 +34,7 @@ count, bins, ignored = plt.hist(rRayleigh, 100, density=True)
 
 pdfRayleigh = (2*bins/OmegaRayleigh) * np.exp(-bins**2/OmegaRayleigh)
 plt.plot(bins, pdfRayleigh, linewidth=2, color='r', 
-	label=r'$\Omega_{ray} = 2\sigma_G^2 = $' + '{}.'.format(OmegaRayleigh))
-
-# pdfRayleighNorm = bins/(sigmaGauss**2) * np.exp(-bins**2/(2 * sigmaGauss**2))
-# plt.plot(bins, pdfRayleighNorm, linewidth=2, color='g', 
-# 	label=r'$ \sigma = {}$ (scale parameter).'.format(sigmaGauss))
+	label=r'$\Omega_{ray} = 2\sigma_G^2 = $' + '{}'.format(OmegaRayleigh))
 
 plt.legend(loc='upper right')
 plt.title(r'Rayleigh pdf)')
@@ -52,11 +48,11 @@ Can be seen as a sum of N squared Rayleigh RVs ~ Rayleigh(sigmaGauss) or Rayleig
 '''
 k = 5 # k = N Rayleigh RVs (SHAPE PARAMETER)
 theta = OmegaRayleigh # (SCALE PARAMETER)
-
+# theta = 1
 rGamma = []
 for _ in np.arange(0, k):
-	xGamma = np.random.normal(mean, np.sqrt(OmegaRayleigh/2), N)
-	yGamma = np.random.normal(mean, np.sqrt(OmegaRayleigh/2), N)
+	xGamma = np.random.normal(mean, np.sqrt(theta/2), N)
+	yGamma = np.random.normal(mean, np.sqrt(theta/2), N)
 	rGamma.append(xGamma**2 + yGamma**2)
 rGamma = sum(rGamma)
 
@@ -66,20 +62,21 @@ A = bins**(k-1) * np.exp(-bins/theta)
 B = gamma(k) * theta**k
 pdfGamma = A/B
 plt.plot(bins, pdfGamma, linewidth=2, color='r', 
-	label=r'$\Omega_{ray} = 2\sigma_G^2 = $' + '{}.'.format(OmegaRayleigh))
-
+	label=r'$\Theta = \Omega_{ray} = 2\sigma_G^2 = $' + '{}'.format(theta))
 
 plt.legend(loc='upper right')
 
-plt.title(r'Gamma pdf ($\sigma_G^2 = {}$)'.format(sigmaGauss))
+plt.title(r'Gamma pdf ($k = N = {}$)'.format(k))
 
 plt.show()
 
 
 # # NAKAGAMI-m
-mu = k
+mu = 2
 # OmegaNakagami = OmegaRayleigh*mu
-
+OmegaNakagami = 2
+OmegaRayleigh = OmegaNakagami/mu
+print('#'*50)
 print('m = {}'.format(mu))
 print('OmegaNakagami = {}'.format(OmegaNakagami))
 rNakagami = []
@@ -89,7 +86,6 @@ for _ in np.arange(0, mu):
 	rNakagami.append(x**2 + y**2)
 
 rNakagami = np.sqrt(sum(rNakagami))
-rNakagami = np.sqrt(rGamma)
 count, bins, ignored = plt.hist(rNakagami, 100, density=True)
 
 A = (mu / OmegaNakagami)**mu
@@ -98,8 +94,10 @@ C = np.exp(-mu*bins**2/OmegaNakagami**2)
 
 pdfNakagami = A*B*C
 
-plt.plot(bins, pdfNakagami, linewidth=2, color='r')
-plt.title(r'Nakagami-m pdf ($\sigma_G^2 = {}$)'.format(sigmaGauss))
+plt.plot(bins, pdfNakagami, linewidth=2, color='r',
+	label=r'$\Omega_{nak} = m\Omega_{ray} = 2m\sigma_G^2 = $' + '{}'.format(OmegaNakagami))
+plt.title(r'Nakagami-m pdf ($m = N = {}$)'.format(mu))
+plt.legend(loc='upper right')
 plt.show()
 
 
