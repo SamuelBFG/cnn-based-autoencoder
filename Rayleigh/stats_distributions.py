@@ -47,7 +47,7 @@ plt.show()
 Can be seen as a sum of N squared Rayleigh RVs ~ Rayleigh(sigmaGauss) or Rayleigh(OmegaRayleigh/2)
 '''
 k = 5 # k = N Rayleigh RVs (SHAPE PARAMETER)
-theta = OmegaRayleigh # (SCALE PARAMETER)
+theta = OmegaRayleigh # (SCALE PARAMETER) THETA = 2 sigma ** 2
 # theta = 1
 rGamma = []
 for _ in np.arange(0, k):
@@ -56,7 +56,7 @@ for _ in np.arange(0, k):
 	rGamma.append(xGamma**2 + yGamma**2)
 rGamma = sum(rGamma)
 
-count, bins, ignored = plt.hist(rGamma, 100, density=True)
+_, bins, _ = plt.hist(rGamma, 100, density=True)
 
 A = bins**(k-1) * np.exp(-bins/theta)
 B = gamma(k) * theta**k
@@ -73,24 +73,25 @@ plt.show()
 
 # # NAKAGAMI-m
 mu = 2
-# OmegaNakagami = OmegaRayleigh*mu
 OmegaNakagami = 2
-OmegaRayleigh = OmegaNakagami/mu
+
+# OmegaRayleigh = 2
 print('#'*50)
 print('m = {}'.format(mu))
 print('OmegaNakagami = {}'.format(OmegaNakagami))
+	
 rNakagami = []
 for _ in np.arange(0, mu):
-	x = np.random.normal(0, np.sqrt(OmegaRayleigh/2), N)
-	y = np.random.normal(0, np.sqrt(OmegaRayleigh/2), N)
+	x = np.random.normal(mean, np.sqrt(OmegaNakagami/(2*mu)), N)
+	y = np.random.normal(mean, np.sqrt(OmegaNakagami/(2*mu)), N)
 	rNakagami.append(x**2 + y**2)
-
 rNakagami = np.sqrt(sum(rNakagami))
-count, bins, ignored = plt.hist(rNakagami, 100, density=True)
 
-A = (mu / OmegaNakagami)**mu
-B = 2*bins**(2*mu-1) / gamma(mu)
-C = np.exp(-mu*bins**2/OmegaNakagami**2)
+_, bins, _ = plt.hist(rNakagami, 100, density=True)
+
+A = (mu**mu) / (OmegaNakagami**mu)
+B = (2 * bins**(2*mu-1)) / (gamma(mu))
+C = np.exp( (-mu * bins**2) / OmegaNakagami )
 
 pdfNakagami = A*B*C
 
