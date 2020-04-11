@@ -56,6 +56,8 @@ for _ in np.arange(0, k):
 	rGamma.append(xGamma**2 + yGamma**2)
 rGamma = sum(rGamma)
 
+
+
 _, bins, _ = plt.hist(rGamma, 100, density=True)
 
 A = bins**(k-1) * np.exp(-bins/theta)
@@ -104,27 +106,46 @@ plt.show()
 
 
 # # ALPHA-MU
-sigma = .5
 N = 10**6
-alpha = 2
-mu = 3
-OmegaAlphaMu = 
-
+alpha = 7/4
+mu = 5
+OmegaAlphaMu = 1
+r_hat = np.power(OmegaAlphaMu, 1/alpha)
 rAlphaMu = []
-for i in np.arange(0, mu):
-	print (i)
-	x = np.random.normal(0, sigma, N)
-	y = np.random.normal(0, sigma, N)
+for i in np.arange(mean, mu):
+	x = np.random.normal(mean, np.sqrt(OmegaAlphaMu/(2*mu)), N)
+	y = np.random.normal(mean, np.sqrt(OmegaAlphaMu/(2*mu)), N)
 	r = (x**2 + y**2)
 	rAlphaMu.append(r)
-rAlphaMu = sum(rAlphaMu)**(1/alpha)
+rAlphaMu = sum(rAlphaMu)
+rAlphaMu = np.power(rAlphaMu, 1/alpha)
 
 _, bins, _ = plt.hist(rAlphaMu, 100, density=True)
 
-A = (mu / )
+# A_1 = mu**mu 
+# A_2 = alpha
+# A_3 = bins**(alpha*mu-1)
+# t = bins**alpha
+# t1 = OmegaAlphaMu
+# t2 = t/t1
+# A_4 = np.exp(-mu*t2)
+# A = A_1 * A_2 * A_3 * A_4
+# B_1 = OmegaNakagami**mu
+# B_2 = gamma(mu)
+# B = B_1 * B_2
+# pdfAlphaMu = A/B
 
+# A_1 = alpha
+# A_2 = mu**mu
+# A_3 = bins**(alpha*mu-1)
+# A = A_1 * A_2 * A_3
+# B_1 = gamma(mu)
+# B_2 = np.exp(mu*bins**alpha)
+# B = B_1 * B_2
+# pdfAlphaMu = A/B
 
-pdfAlphaMu = alpha * mu**mu * bins**(alpha*mu -1) / ()
-plt.plot(bins)
-plt.title('Rayleigh pdf')
+# pdfAlphaMu = A*B*C
+plt.plot(bins, pdfAlphaMu, linewidth=2, color='r',
+	label=r'$\Omega_{\alpha-\mu} = $' + '{}'.format(OmegaNakagami))
+plt.title(r'$\alpha-\mu$ pdf')
 plt.show()
