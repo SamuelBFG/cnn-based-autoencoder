@@ -104,23 +104,27 @@ plt.show()
 
 
 # # ALPHA-MU
-# sigma = .5
-# N = 10**6
-# alpha = 2
-# mu = 3
+sigma = .5
+N = 10**6
+alpha = 2
+mu = 3
+OmegaAlphaMu = 
+
+rAlphaMu = []
+for i in np.arange(0, mu):
+	print (i)
+	x = np.random.normal(0, sigma, N)
+	y = np.random.normal(0, sigma, N)
+	r = (x**2 + y**2)
+	rAlphaMu.append(r)
+rAlphaMu = sum(rAlphaMu)**(1/alpha)
+
+_, bins, _ = plt.hist(rAlphaMu, 100, density=True)
+
+A = (mu / )
 
 
-# rAlphaMu = []
-# for i in np.arange(0, mu):
-# 	print (i)
-# 	x = np.random.normal(0, sigma, N)
-# 	y = np.random.normal(0, sigma, N)
-# 	r = np.sqrt(x**2 + y**2)
-# 	rAlphaMu.append(r)
-# print(np.shape(rAlphaMu))
-
-# count, bins, ignored = plt.hist(rAlphaMu, 30, density=True)
-# pdfAlphaMu = alpha * mu**mu * bins**(alpha*mu -1) / ()
-# plt.plot(bins)
-# plt.title('Rayleigh pdf')
-# plt.show()
+pdfAlphaMu = alpha * mu**mu * bins**(alpha*mu -1) / ()
+plt.plot(bins)
+plt.title('Rayleigh pdf')
+plt.show()
