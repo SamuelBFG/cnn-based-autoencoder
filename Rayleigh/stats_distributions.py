@@ -108,7 +108,7 @@ plt.show()
 # # ALPHA-MU
 N = 10**6
 alpha = 7/4
-mu = 5
+mu = 7
 OmegaAlphaMu = 1
 r_hat = np.power(OmegaAlphaMu, 1/alpha)
 rAlphaMu = []
@@ -135,14 +135,14 @@ _, bins, _ = plt.hist(rAlphaMu, 100, density=True)
 # B = B_1 * B_2
 # pdfAlphaMu = A/B
 
-# A_1 = alpha
-# A_2 = mu**mu
-# A_3 = bins**(alpha*mu-1)
-# A = A_1 * A_2 * A_3
-# B_1 = gamma(mu)
-# B_2 = np.exp(mu*bins**alpha)
-# B = B_1 * B_2
-# pdfAlphaMu = A/B
+A_1 = alpha
+A_2 = mu**mu
+A_3 = bins**(alpha*mu-1)
+A = A_1 * A_2 * A_3
+B_1 = gamma(mu)
+B_2 = np.exp(mu*bins**alpha)
+B = B_1 * B_2
+pdfAlphaMu = A/B
 
 # pdfAlphaMu = A*B*C
 plt.plot(bins, pdfAlphaMu, linewidth=2, color='r',
