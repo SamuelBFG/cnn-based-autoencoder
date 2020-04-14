@@ -2,15 +2,15 @@
 # by ZKY 2019/04/22
 
 import os
-import tensorflow as tf
-from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, Lambda, BatchNormalization, Input, Conv1D, TimeDistributed, LeakyReLU, Flatten, Activation
+os.environ['KERAS_BACKEND'] = 'tensorflow'
+from keras.utils import to_categorical
+from keras.models import Model
+from keras.layers import Dense, Lambda, BatchNormalization, Input, Conv1D, TimeDistributed, LeakyReLU, Flatten, Activation
 import matplotlib.pyplot as plt
 import numpy as np
-from tensorflow.keras import backend as KR
+from keras import backend as KR
 import copy
-KR.set_floatx('float64')
+import time
 
 '''
  --- COMMUNICATION PARAMETERS ---
@@ -34,7 +34,7 @@ train_Eb_dB = 16
 
 # Number of messages used for test, each size = k*L
 batch_size = 64
-num_of_sym = batch_size*k*L
+num_of_sym = batch_size*1000
 
 # Initial Vectors
 Vec_Eb_N0 = []
@@ -96,14 +96,17 @@ def complex_multi(h,x):
 # Define Channel Layers
 #  x: input data
 #  sigma: noise std
-def channel_layer(inputs):
+def channel_layer(x, sigma):
     # Init output tensor
-    x, sigma = inputs
     a_complex = []
-
+    mu = 2
+    alpha = 2
     # AWGN noise
     w = KR.random_normal(KR.shape(x), mean=0.0, stddev=sigma)
-    h = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
+    h1 = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
+    h2 = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
+    r = KR.pow(h1, 2) + KR.pow(h2, 2)
+    h = KR.pow(r, 1/2)
 
     # support different channel use (n)
     for i in range(0,2*n,2):
@@ -159,8 +162,8 @@ for Eb_N0_dB in range(0,30):
     e = Lambda(normalization, name='power_norm')(e)
 
     # Rayleigh + AWGN channel + h(CSI)
-    # y_h = Lambda(channel_layer, arguments={'sigma': noise_sigma}, name='channel_layer')(e)
-    y_h = Lambda(function=channel_layer, name='channel_layer')([e, noise_sigma])
+    y_h = Lambda(channel_layer, arguments={'sigma': noise_sigma}, name='channel_layer')(e)
+
     # Define Decoder Layers (Receiver)
     d = Conv1D(filters=256, strides=1, kernel_size=1, name='d_1')(y_h)
     d = BatchNormalization(name='d_2')(d)
@@ -180,12 +183,14 @@ for Eb_N0_dB in range(0,30):
 
 
     # Load Weights from the trained NN
-    model.load_weights('./' + 'model_trained_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh' + '.tf')
+    model.load_weights('./' + 'model_LBC_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh ' + '.h5',
+                       by_name=False)
 
 
     '''
     RUN THE NN
     '''
+
     # RUN Through the Model and get output
     decoder_output = model.predict(vec_one_hot, batch_size=batch_size)
 
@@ -210,14 +215,14 @@ for Eb_N0_dB in range(0,30):
     Vec_Eb_N0.append(Eb_N0_dB)
     Bit_error_rate.append(error_rate)
 
-    # #  Plot constellation
+    ##  Plot constellation
     # fig = plt.figure(1)
     # plt.title('Constellation k=' + str(k) + ' test at ' + str(Eb_N0_dB)+' model C')
     # # plt.xlim(-2, 2)
     # plt.ylim(-1, 1)
     # plt.plot(normalization_layer_output[1, :, 0], normalization_layer_output[1, :, 1], 'b.')
-    
-    
+    #
+    #
     # print(normalization_layer_output[1, :, 0])
     # print('\n',normalization_layer_output[1, :, 1])
     # plt.grid(True)
@@ -242,6 +247,6 @@ label = [str(k) + '_' + str(L)]
 plt.legend(label, loc=0)
 plt.xlabel('Eb/N0')
 plt.ylabel('BER')
-plt.title('k=' + str(k) + ' ' + 'n=' + str(n) + ' ' + 'L=' + str(L))
+plt.title(str(k) + '_' + str(n)+'_'+str(L))
 plt.grid('true')
 plt.show()

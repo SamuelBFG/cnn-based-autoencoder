@@ -3,18 +3,19 @@
 
 import os
 
-import tensorflow as tf
-from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.layers import Dense, Dropout, Lambda, BatchNormalization, Input, Conv1D, TimeDistributed, Flatten, Activation,Conv2D
-from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, History, ModelCheckpoint, ReduceLROnPlateau
-from tensorflow.keras import backend as KR
+os.environ['KERAS_BACKEND'] = 'tensorflow'
+from keras.utils import to_categorical
+from keras.layers import Dense, Dropout, Lambda, BatchNormalization, Input, Conv1D, TimeDistributed, Flatten, Activation,Conv2D
+from keras.models import Model
+from keras.callbacks import EarlyStopping, TensorBoard, History, ModelCheckpoint, ReduceLROnPlateau
+from keras import backend as KR
 import numpy as np
 import copy
 import time
 import matplotlib.pyplot as plt
-from tensorflow.keras.optimizers import Adam
+from keras.optimizers import Adam
 import time
+
 '''
  --- COMMUNICATION PARAMETERS ---
 '''
@@ -74,7 +75,7 @@ label_one_hot = copy.copy(vec_one_hot)
 
 early_stopping_patience = 100
 
-epochs = 50
+epochs = 250
 
 optimizer = Adam(lr=0.001)
 
@@ -87,12 +88,12 @@ reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.1,
                               patience=5, min_lr=0.0001)
 
 # Save the best results based on Training Set
-modelcheckpoint = ModelCheckpoint(filepath='./' + 'model_trained_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh' + '.h5',
+modelcheckpoint = ModelCheckpoint(filepath='./' + 'model_LBC_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh ' + '.h5',
                                   monitor='loss',
                                   verbose=1,
                                   save_best_only=True,
                                   save_weights_only=True,
-                                  mode='auto', save_freq=1)
+                                  mode='auto', period=1)
 
 
 
@@ -107,9 +108,6 @@ def complex_multi(h,x):
     # (a+bi)*(c+di) = (ac-bd)+(bc+ad)i
     # construct h1[c,-d]
     tmp_array = KR.ones(shape=(KR.shape(x)[0], L, 1))
-    # print(KR.shape(x))
-    # time.sleep(30)
-
     n_sign_array = KR.concatenate([tmp_array, -tmp_array], axis=2)
     h1 = h * n_sign_array
 
@@ -138,16 +136,18 @@ def complex_multi(h,x):
 def channel_layer(x, sigma):
     # Init output tensor
     a_complex = []
-
+    mu = 1
+    alpha = 2
     # AWGN noise
     w = KR.random_normal(KR.shape(x), mean=0.0, stddev=sigma)
-    h = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
-
+    h = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2)
+    # print(KR.shape(h))
+    # print(h.shape)
+    # time.sleep(500)
     # support different channel use (n)
     for i in range(0,2*n,2):
 
         y_h = complex_multi(h[:,:,i:i+2],x[:,:,i:i+2])
-        
 
         if i ==0:
             a_complex = y_h
@@ -156,6 +156,7 @@ def channel_layer(x, sigma):
 
     # Feed perfect CSI and HS+n to the receiver
     result = KR.concatenate([a_complex+w,h],axis=-1)
+
     return result
 
 
@@ -203,7 +204,7 @@ sys_model.summary()
 
 
 # Compile Model
-sys_model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'], experimental_run_tf_function=True)
+sys_model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
 # print('encoder output:', '\n', encoder.predict(vec_one_hot, batch_size=batch_size))
 
 print('starting train the NN...')
