@@ -1,248 +1,52 @@
-# This script trains the conv1D-based Linear Block Codes/Modulation
-# by ZKY 2019/04/22
-
-import os
-
-os.environ['KERAS_BACKEND'] = 'tensorflow'
-from keras.utils import to_categorical
-from keras.layers import Dense, Dropout, Lambda, BatchNormalization, Input, Conv1D, TimeDistributed, Flatten, Activation,Conv2D
-from keras.models import Model
-from keras.callbacks import EarlyStopping, TensorBoard, History, ModelCheckpoint, ReduceLROnPlateau
-from keras import backend as KR
 import numpy as np
-import copy
-import time
 import matplotlib.pyplot as plt
-from keras.optimizers import Adam
-import time
 
-'''
- --- COMMUNICATION PARAMETERS ---
-'''
-
-# Bits per Symbol
-k = 2
-
-# Number of symbols
-L = 50
-
-# Channel Use
-n = 1
-
-# Effective Throughput
-#  (bits per symbol)*( number of symbols) / channel use
-R = k / n
-
-# Eb/N0 used for training
-train_Eb_dB = 16
-
-# Noise Standard Deviation
-noise_sigma = np.sqrt(1 / (2 * R * 10 ** (train_Eb_dB / 10)))
-
-
-# Number of messages used for training, each size = k*L
-batch_size = 64
-
-nb_train_word = batch_size*k*L
-
-'''
- --- GENERATING INPUT DATA ---
-'''
-
-# Generate training binary Data
-train_data = np.random.randint(low=0, high=2, size=(nb_train_word, k * L))
-# Used as labeled data
-label_data = copy.copy(train_data)
-train_data = np.reshape(train_data, newshape=(nb_train_word, L, k))
-
-# Convert Binary Data to integer
-tmp_array = np.zeros(shape=k)
-for i in range(k):
-    tmp_array[i] = 2 ** i
-int_data = tmp_array[::-1]
-
-# Convert Integer Data to one-hot vector
-int_data = np.reshape(int_data, newshape=(k, 1))
-one_hot_data = np.dot(train_data, int_data)
-vec_one_hot = to_categorical(y=one_hot_data, num_classes=2 ** k)
-
-# used as Label data
-label_one_hot = copy.copy(vec_one_hot)
-
-'''
- --- NEURAL NETWORKS PARAMETERS ---
-'''
-
-early_stopping_patience = 100
-
-epochs = 50
-
-optimizer = Adam(lr=0.001)
-
-early_stopping = EarlyStopping(monitor='val_loss',
-                               patience=early_stopping_patience)
-
-
-# Learning Rate Control
-reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.1,
-                              patience=5, min_lr=0.0001)
-
-# Save the best results based on Training Set
-modelcheckpoint = ModelCheckpoint(filepath='./' + 'model_LBC_' + str(k) + '_' + str(L) + '_' + str(n) + '_' + str(train_Eb_dB) + 'dB' + ' ' + 'Rayleigh ' + '.h5',
-                                  monitor='loss',
-                                  verbose=1,
-                                  save_best_only=True,
-                                  save_weights_only=True,
-                                  mode='auto', period=1)
-
-
-
-# Define Power Norm for Tx
-def normalization(x):
-    mean = KR.mean(x ** 2)
-    return x / KR.sqrt(2 * mean)  # 2 = I and Q channels
-
-def complex_multi(h,x):
-
-    # ---- For Complex Number multiply of h*x
-    # (a+bi)*(c+di) = (ac-bd)+(bc+ad)i
-    # construct h1[c,-d]
-    tmp_array = KR.ones(shape=(KR.shape(x)[0], L, 1))
-    n_sign_array = KR.concatenate([tmp_array, -tmp_array], axis=2)
-    h1 = h * n_sign_array
-
-    # construct h2
-    h2 = KR.reverse(h, axes=2)
-
-    # ac - bd
-    tmp = h1 * x
-    h1x = KR.sum(tmp, axis=-1)
-
-    # bc + ad
-    tmp = h2 * x
-    h2x = KR.sum(tmp, axis=-1)
-
-    a_real = KR.expand_dims(h1x, axis=2)
-    a_img = KR.expand_dims(h2x, axis=2)
-
-    a_complex_array = KR.concatenate([a_real, a_img], axis=-1)
-
-    return a_complex_array
-
-
-# Define Channel Layers
-#  x: input data
-#  sigma: noise std
-def channel_layer(x, sigma):
-    # Init output tensor
-    a_complex = []
-    mu = 2
-    alpha = 2
-    # AWGN noise
-    w = KR.random_normal(KR.shape(x), mean=0.0, stddev=sigma)
-    h1 = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
-    h2 = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
-    r = KR.pow(h1, 2) + KR.pow(h2, 2)
-    h = KR.pow(r, 1/2)
-
-
-    # print(KR.shape(h))
-    # print(h.shape)
-    # time.sleep(500)
-    # support different channel use (n)
-    for i in range(0,2*n,2):
-
-        y_h = complex_multi(h[:,:,i:i+2],x[:,:,i:i+2])
-
-        if i ==0:
-            a_complex = y_h
-        else:
-            a_complex = KR.concatenate([a_complex,y_h],axis=-1)
-
-    # Feed perfect CSI and HS+n to the receiver
-    result = KR.concatenate([a_complex+w,h],axis=-1)
-
-    return result
-
-
-
-model_input = Input(batch_shape=(None, L, 2 ** k), name='input_bits')
-
-e = Conv1D(filters=256, strides=1, kernel_size=1, name='e_1')(model_input)
-e = BatchNormalization(name='e_2')(e)
-e = Activation('elu', name='e_3')(e)
-
-
-e = Conv1D(filters=256, strides=1, kernel_size=1, name='e_7')(e)
-e = BatchNormalization(name='e_8')(e)
-e = Activation('elu', name='e_9')(e)
-
-e = Conv1D(filters=2 * n, strides=1, kernel_size=1, name='e_10')(e)  # 2 = I and Q channels
-e = BatchNormalization(name='e_11')(e)
-e = Activation('linear', name='e_12')(e)
-
-e = Lambda(normalization, name='power_norm')(e)
-
-
-# Rayleigh + AWGN channel + h(CSI)
-y_h = Lambda(channel_layer, arguments={'sigma': noise_sigma}, name='channel_layer')(e)
-
-# Define Decoder Layers (Receiver)
-d = Conv1D(filters=256, strides=1, kernel_size=1, name='d_1')(y_h)
-d = BatchNormalization(name='d_2')(d)
-d = Activation('elu', name='d_3')(d)
-
-
-d = Conv1D(filters=256, strides=1, kernel_size=1, name='d_7')(d)
-d = BatchNormalization(name='d_8')(d)
-d = Activation('elu', name='d_9')(d)
-
-# Output One hot vector and use Softmax to soft decoding
-model_output = Conv1D(filters=2 ** k, strides=1, kernel_size=1, name='d_10', activation='softmax')(d)
-
-# Build System Model
-sys_model = Model(model_input, model_output)
-encoder = Model(model_input, e)
-
-# Print Model Architecture
-sys_model.summary()
-
-
-# Compile Model
-sys_model.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
-# print('encoder output:', '\n', encoder.predict(vec_one_hot, batch_size=batch_size))
-
-print('starting train the NN...')
-start = time.clock()
-
-# TRAINING
-mod_history = sys_model.fit(vec_one_hot, label_one_hot,
-                            batch_size=batch_size,
-                            epochs=epochs,
-                            verbose=1,
-                            validation_split=None, callbacks=[modelcheckpoint,reduce_lr])
-
-end = time.clock()
-
-print('The NN has trained ' + str(end - start) + ' s')
-
-
-# Plot the Training Loss and Validation Loss
-hist_dict = mod_history.history
-
-# val_loss = hist_dict['val_loss']
-loss = hist_dict['loss']
-# acc = hist_dict['acc']
-# val_acc = hist_dict['val_acc']
-print(loss)
-epoch = np.arange(1, epochs + 1)
-
-# plt.semilogy(epoch,val_loss,label='val_loss')
-plt.semilogy(epoch, loss, label='loss')
-
-plt.legend(loc=0)
-plt.grid('true')
-plt.xlabel('epochs')
-plt.ylabel('Binary cross-entropy loss')
-
+x = np.arange(0,30)
+
+tru_bler = [0.1465965625, 0.12663375, 0.108449375, 0.09171625, 0.077281875, 0.0642928125, 0.05279125, 0.0434259375, 0.035626875, 0.0287071875, 0.023293125, 0.018800625, 0.0150484375, 0.012090625, 0.0097278125, 0.0077828125, 0.0061540625, 0.004979375, 0.00392625, 0.0031925, 0.00244375, 0.0020071875, 0.001640625, 0.00129125, 0.0010525, 0.000811875, 0.0006659375, 0.0005415625, 0.0004575, 0.0003690625]
+tt = [0.0876403125, 0.07530125, 0.06431375, 0.0542921875, 0.0458984375, 0.038404375, 0.0323771875, 0.026889375, 0.0222284375, 0.01831625, 0.0152340625, 0.0125478125, 0.010345625, 0.0084659375, 0.00692625, 0.0057428125, 0.0048278125, 0.0039784375, 0.003306875, 0.00278625, 0.0023665625, 0.0020578125, 0.0017734375, 0.0016121875, 0.00139875, 0.001268125, 0.001163125, 0.00113625, 0.00104875, 0.0010271875]
+nakagami_L_50 = [0.0735746875, 0.05502625, 0.0395425, 0.0268528125, 0.017735625, 0.01114375, 0.00666375, 0.0037928125, 0.002188125, 0.00116375, 0.00065375, 0.0003415625, 0.000184375, 9.59375e-05, 4.4375e-05, 2.34375e-05, 1.0625e-05, 4.375e-06, 4.0625e-06, 1.25e-06, 9.375e-07, 6.25e-07, 3.125e-07, 3.125e-07, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+y4 = [0.0846321875, 0.0602784375, 0.042010625, 0.02829, 0.0184525, 0.011685, 0.0069128125, 0.0039884375, 0.0022571875, 0.0012271875, 0.0006534375, 0.0003228125, 0.00017125, 9.625e-05, 4.625e-05, 2.90625e-05, 1.40625e-05, 5e-06, 2.1875e-06, 3.4375e-06, 6.25e-07, 9.375e-07, 3.125e-07, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+y5 = [0.15825390625, 0.133928125, 0.1127303125, 0.094103125, 0.07812109375, 0.06483375, 0.05335921875, 0.0436553125, 0.03560359375, 0.02889125, 0.02325125, 0.0188734375, 0.01515015625, 0.012145625, 0.00968484375, 0.0077534375, 0.0062328125, 0.0049809375, 0.00399078125, 0.00319765625, 0.0025615625, 0.00206734375, 0.0017190625, 0.00139859375, 0.0011865625, 0.00099640625, 0.00084484375, 0.0007503125, 0.0006559375, 0.00059703125]
+test_m1 = [0.153554375, 0.1321328125, 0.1120221875, 0.0945240625, 0.0787234375, 0.06477375, 0.0536284375, 0.043794375, 0.0357175, 0.028970625, 0.0236171875, 0.018811875, 0.015203125, 0.0122190625, 0.0097953125, 0.007843125, 0.00628625, 0.0050225, 0.0040425, 0.003284375, 0.002686875, 0.0021746875, 0.001824375, 0.001565, 0.001320625, 0.0011490625, 0.0010415625, 0.00097, 0.0008975, 0.0008765625]
+test_m2 = [0.07549625, 0.056268125, 0.04042625, 0.0279134375, 0.0184509375, 0.011529375, 0.006939375, 0.004034375, 0.00229, 0.0012696875, 0.0006734375, 0.000386875, 0.00019125, 8.9375e-05, 4.75e-05, 2.625e-05, 1.34375e-05, 7.8125e-06, 2.8125e-06, 1.25e-06, 9.375e-07, 3.125e-07, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+test_m3 = [0.04183125, 0.0270790625, 0.0162875, 0.0087534375, 0.0043875, 0.0018640625, 0.000773125, 0.0002665625, 8.0625e-05, 2.28125e-05, 5.625e-06, 1.5625e-06, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+test_m2_ = [0.0734390625, 0.05472, 0.0391625, 0.0268246875, 0.0176665625, 0.01109375, 0.006725625, 0.0038703125, 0.0021803125, 0.001191875, 0.000655, 0.00033125, 0.0001696875, 9.40625e-05, 4.40625e-05, 2.40625e-05, 1.40625e-05, 5.9375e-06, 1.875e-06, 1.875e-06, 9.375e-07, 9.375e-07, 0.0, 0.0, 0.0, 3.125e-07, 0.0, 0.0, 0.0, 0.0]
+test_m_2x = [0.079901875, 0.0606240625, 0.0440809375, 0.0306503125, 0.020524375, 0.013109375, 0.0080984375, 0.004806875, 0.0027340625, 0.0015115625, 0.0008253125, 0.0004221875, 0.0002321875, 0.00012875, 6.21875e-05, 3.34375e-05, 1.875e-05, 5.9375e-06, 3.4375e-06, 2.8125e-06, 6.25e-07, 3.125e-07, 3.125e-07, 3.125e-07, 0.0, 3.125e-07, 0.0, 0.0, 0.0, 0.0]
+test_m4 = [0.0283671875, 0.01651, 0.0086740625, 0.003999375, 0.0015515625, 0.000499375, 0.0001284375, 2.375e-05, 4.0625e-06, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+## FIGURA 1
+
+# plt.plot(x,y4,label='Nakagmai-m(1/2mu) (14dB) (mu=2) (L=100)')
+# plt.plot(x,y5,label='Nakagmai-m(1/2mu) (14dB) (mu=1) (L=100)')
+# plt.plot(x,tru_bler,label='BLER Rayleigh (14dB)')
+# plt.plot(x,nakagami_L_50,label='Nakagmai-m* (7dB) (mu=2) (L=50)')
+# plt.yscale('log')
+# plt.grid(True)
+# plt.legend(loc='upper right')
+# plt.title('Tentativa BPSK Nakagami-m')
+# axes = plt.gca()
+# axes.set_xlim([0,30])
+# axes.set_ylim([10**(-6),10**(0)])
+# plt.show()
+
+## FIGURA 2
+
+
+
+
+plt.plot(x,tru_bler,label='BLER Rayleigh (14dB)')
+plt.plot(x,test_m1,label='Model m=1 (14dB) (L=50) ')
+plt.plot(x,test_m2,label='Model m=2 (14dB) (L=50) ')
+plt.plot(x,test_m3,label='Model m=3 (14dB) (L=50) ')
+# plt.plot(x,test_m2_,label='Model m=2 (7dB) (L=50) ')
+# plt.plot(x,test_m_2x,label='Model m=2 (28dB) (L=50) ')
+plt.plot(x,test_m4,label='Model m=4 (14dB) (L=50) ')
+plt.yscale('log')
+plt.grid(True)
+plt.legend(loc='upper right')
+axes = plt.gca()
+plt.title('Modelo BPSK Nakagami-m')
+axes.set_xlim([0,30])
+axes.set_ylim([10**(-6),10**(0)])
 plt.show()

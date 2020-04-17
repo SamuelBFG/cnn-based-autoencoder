@@ -17,7 +17,7 @@ import time
 '''
 
 # number of information bits
-k = 2
+k = 1
 
 # codeword Length
 L = 50
@@ -30,7 +30,7 @@ n = 1
 R = k/n
 
 # Eb/N0 used for training(load_weights)
-train_Eb_dB = 16
+train_Eb_dB = 14
 
 # Number of messages used for test, each size = k*L
 batch_size = 64
@@ -99,14 +99,18 @@ def complex_multi(h,x):
 def channel_layer(x, sigma):
     # Init output tensor
     a_complex = []
-    mu = 2
     alpha = 2
+    mu = 1
     # AWGN noise
     w = KR.random_normal(KR.shape(x), mean=0.0, stddev=sigma)
-    h1 = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
-    h2 = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
-    r = KR.pow(h1, 2) + KR.pow(h2, 2)
-    h = KR.pow(r, 1/2)
+    # h = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
+    h = KR.zeros(KR.shape(x))
+    test = []
+    for _ in np.arange(0, mu):
+        kappa = KR.square(KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / (2*mu))))
+        h = h + kappa
+        h = KR.pow(h,1/alpha)
+    # h = KR.sum(test, axis=0)
 
     # support different channel use (n)
     for i in range(0,2*n,2):
