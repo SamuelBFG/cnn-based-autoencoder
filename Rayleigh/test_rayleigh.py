@@ -17,7 +17,7 @@ import time
 '''
 
 # number of information bits
-k = 1
+k = 2
 
 # codeword Length
 L = 50
@@ -30,7 +30,7 @@ n = 1
 R = k/n
 
 # Eb/N0 used for training(load_weights)
-train_Eb_dB = 14
+train_Eb_dB = 16
 
 # Number of messages used for test, each size = k*L
 batch_size = 64
@@ -100,7 +100,7 @@ def channel_layer(x, sigma):
     # Init output tensor
     a_complex = []
     alpha = 2
-    mu = 1
+    mu = 2
     # AWGN noise
     w = KR.random_normal(KR.shape(x), mean=0.0, stddev=sigma)
     # h = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
