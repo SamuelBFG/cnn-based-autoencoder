@@ -21,7 +21,7 @@ import time
 '''
 
 # Bits per Symbol
-k = 1
+k = 2
 
 # Number of symbols
 L = 50
@@ -34,7 +34,7 @@ n = 1
 R = k / n
 
 # Eb/N0 used for training
-train_Eb_dB = 14
+train_Eb_dB = 16
 
 # Noise Standard Deviation
 noise_sigma = np.sqrt(1 / (2 * R * 10 ** (train_Eb_dB / 10)))
@@ -47,7 +47,7 @@ nb_train_word = batch_size*200
 
 
 alpha = 2
-mu = 4
+mu = 2
 
 '''
  --- GENERATING INPUT DATA ---
