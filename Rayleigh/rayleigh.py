@@ -21,7 +21,7 @@ import time
 '''
 
 # Bits per Symbol
-k = 2
+k = 1
 
 # Number of symbols
 L = 50
@@ -34,7 +34,7 @@ n = 1
 R = k / n
 
 # Eb/N0 used for training
-train_Eb_dB = 16
+train_Eb_dB = 14
 
 # Noise Standard Deviation
 noise_sigma = np.sqrt(1 / (2 * R * 10 ** (train_Eb_dB / 10)))
@@ -44,6 +44,10 @@ noise_sigma = np.sqrt(1 / (2 * R * 10 ** (train_Eb_dB / 10)))
 batch_size = 64
 
 nb_train_word = batch_size*200
+
+
+alpha = 2
+mu = 3
 
 '''
  --- GENERATING INPUT DATA ---
@@ -137,8 +141,7 @@ def complex_multi(h,x):
 def channel_layer(x, sigma):
     # Init output tensor
     a_complex = []
-    alpha = 2
-    mu = 2
+
     # AWGN noise
     w = KR.random_normal(KR.shape(x), mean=0.0, stddev=sigma)
     # h = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
@@ -147,7 +150,8 @@ def channel_layer(x, sigma):
     for _ in np.arange(0, mu):
     	kappa = KR.square(KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / (2*mu))))
     	h = h + kappa
-    	h = KR.pow(h,1/alpha)
+    h = KR.pow(h,1/alpha)
+
     # h = KR.sum(test, axis=0)
 
     # support different channel use (n)
@@ -247,3 +251,4 @@ plt.xlabel('epochs')
 plt.ylabel('Binary cross-entropy loss')
 
 plt.show()
+

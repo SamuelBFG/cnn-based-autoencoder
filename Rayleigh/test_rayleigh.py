@@ -17,7 +17,7 @@ import time
 '''
 
 # number of information bits
-k = 2
+k = 1
 
 # codeword Length
 L = 50
@@ -30,7 +30,7 @@ n = 1
 R = k/n
 
 # Eb/N0 used for training(load_weights)
-train_Eb_dB = 16
+train_Eb_dB = 14
 
 # Number of messages used for test, each size = k*L
 batch_size = 64
@@ -39,6 +39,11 @@ num_of_sym = batch_size*1000
 # Initial Vectors
 Vec_Eb_N0 = []
 Bit_error_rate = []
+
+alpha = 2
+mu = 2
+
+# global hAlphaMu
 
 '''
  --- GENERATING INPUT DATA ---
@@ -99,8 +104,7 @@ def complex_multi(h,x):
 def channel_layer(x, sigma):
     # Init output tensor
     a_complex = []
-    alpha = 2
-    mu = 2
+
     # AWGN noise
     w = KR.random_normal(KR.shape(x), mean=0.0, stddev=sigma)
     # h = KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / 2))
@@ -109,9 +113,10 @@ def channel_layer(x, sigma):
     for _ in np.arange(0, mu):
         kappa = KR.square(KR.random_normal(KR.shape(x), mean=0.0, stddev=np.sqrt(1 / (2*mu))))
         h = h + kappa
-        h = KR.pow(h,1/alpha)
+    h = KR.pow(h,1/alpha)
     # h = KR.sum(test, axis=0)
-
+    # global hAlphaMu
+    # hAlphaMu = h
     # support different channel use (n)
     for i in range(0,2*n,2):
 
@@ -124,6 +129,8 @@ def channel_layer(x, sigma):
 
     # Feed perfect CSI and HS+n to the receiver
     result = KR.concatenate([a_complex+w,h],axis=-1)
+
+
 
     return result
 
@@ -254,3 +261,20 @@ plt.ylabel('BER')
 plt.title(str(k) + '_' + str(n)+'_'+str(L))
 plt.grid('true')
 plt.show()
+
+# _, bins, _ = plt.hist(hAlphaMu, 100, density=True)
+# A_1 = alpha
+# A_2 = mu**mu
+# A_3 = bins**(alpha*mu-1)
+# A = A_1 * A_2 * A_3
+# B_1 = np.gamma(mu)
+# B_2 = np.exp(mu*bins**alpha)
+# B = B_1 * B_2
+# pdfAlphaMu = A/B
+
+# # pdfAlphaMu = A*B*C
+# plt.plot(bins, pdfAlphaMu, linewidth=2, color='r',
+#     label=r'$\Omega_{\alpha-\mu} = $' + '{}'.format(1))
+# plt.title(r'$\alpha-\mu$ pdf')
+# plt.show()
+
