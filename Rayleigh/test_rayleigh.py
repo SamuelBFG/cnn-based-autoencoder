@@ -41,7 +41,7 @@ Vec_Eb_N0 = []
 Bit_error_rate = []
 
 alpha = 2
-mu = 2
+mu = 4
 
 # global hAlphaMu
 
