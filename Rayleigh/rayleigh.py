@@ -46,7 +46,7 @@ batch_size = 64
 nb_train_word = batch_size*200
 
 
-alpha = 2
+alpha = 3
 mu = 2
 
 '''

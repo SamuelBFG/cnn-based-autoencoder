@@ -40,7 +40,7 @@ num_of_sym = batch_size*1000
 Vec_Eb_N0 = []
 Bit_error_rate = []
 
-alpha = 2
+alpha = 3
 mu = 2
 
 # global hAlphaMu
