@@ -5,6 +5,7 @@ from scipy.special import erf, erfc
 import matplotlib.pyplot as plt
 import random
 import time
+from scipy.integrate import quad
 
 
 
@@ -12,7 +13,7 @@ import time
 #### SIMULATED ####
 ###################  
 N = 5000000
-EbNodB = np.arange(0,36,0.5)
+EbNodB = np.arange(0,36,1)
 ber_awgn = [None]*len(EbNodB)
 ber_ray = [None]*len(EbNodB)
 
@@ -57,9 +58,25 @@ for n in range (0, len(EbNodB)):
 ###################
 ber_awgn_th = 0.5*erfc(np.sqrt(10**(EbNodB/10)))
 
+def rayleigh(i, x):
+	A = 0.5*erfc(np.sqrt(10**(x/10)))
+	B = (1/i) * np.exp(-x/i)
+	return A*B
+
+
+
+ber_ray_th = [None]*len(EbNodB)
+for i in EbNodB:
+	ber_ray_th[i], _ = quad(rayleigh, 0, np.inf, args=i)
+
+print(ber_ray_th)
+
+# test = sum(ber_ray_th) / len(ber_ray_th)
+
 plt.plot(EbNodB, ber_awgn, 'ro', label='AWGN - Simulated')
 plt.plot(EbNodB, ber_ray, 'bo', label='RAYLEIGH - Simulated')
 plt.plot(EbNodB, ber_awgn_th, 'r', label='AWGN - Theoretical')
+plt.plot(EbNodB, ber_ray_th, 'b', label='RAYLEIGH - Theoretical')
 plt.axis([0, 35, 1e-5, 0.1])
 plt.xscale('linear')
 plt.yscale('log')
