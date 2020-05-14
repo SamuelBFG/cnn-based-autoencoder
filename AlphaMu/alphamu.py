@@ -43,11 +43,11 @@ noise_sigma = np.sqrt(1 / (2 * R * 10 ** (train_Eb_dB / 10)))
 # Number of messages used for training, each size = k*L
 batch_size = 64
 
-nb_train_word = batch_size*150
+nb_train_word = batch_size*250
 
 
 alpha = 2
-mu = 2
+mu = 4
 
 '''
  --- GENERATING INPUT DATA ---

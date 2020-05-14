@@ -34,14 +34,14 @@ train_Eb_dB = 14
 
 # Number of messages used for test, each size = k*L
 batch_size = 64
-num_of_sym = batch_size*750
+num_of_sym = batch_size*1250
 
 # Initial Vectors
 Vec_Eb_N0 = []
 Bit_error_rate = []
 
 alpha = 2
-mu = 1
+mu = 4
 
 # global hAlphaMu
 
@@ -248,7 +248,7 @@ PLOTTING
 
 print(Vec_Eb_N0, '\n', Bit_error_rate)
 
-with open('BLER_AlphaAu_'+str(alpha)+'_'+str(mu)+'_'+str(k)+'_'+str(L)+'_'+str(n)+str(train_Eb_dB)+'dB'+'.txt', 'w') as f:
+with open('BLER_AlphaMu_'+str(alpha)+'_'+str(mu)+'_'+str(k)+'_'+str(L)+'_'+str(n)+str(train_Eb_dB)+'dB'+'.txt', 'w') as f:
     print(Vec_Eb_N0, '\n', Bit_error_rate, file=f)
 f.closed
 
