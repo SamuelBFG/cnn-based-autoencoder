@@ -46,8 +46,8 @@ batch_size = 64
 nb_train_word = batch_size*250
 
 
-alpha = 2
-mu = 4
+alpha = 3
+mu = 2
 
 '''
  --- GENERATING INPUT DATA ---
